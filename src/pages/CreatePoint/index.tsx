@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import axios from 'axios';
 
 import api from '../../services/api';
 
@@ -15,13 +16,30 @@ interface Item {
   image_url: string;
 }
 
+interface IBGEUFResponse {
+  sigla: string;
+}
+
 const CreatePoint = () => {
   const [items, setItems] = useState<Item[]>([]);
+  const [ufs, setUfs] = useState<string[]>([]);
 
   useEffect(() => {
     api.get('items').then(response => {
       setItems(response.data);
     });
+  }, []);
+
+  useEffect(() => {
+    axios
+      .get<IBGEUFResponse[]>(
+        'https://servicodados.ibge.gov.br/api/v1/localidades/estados'
+      )
+      .then(response => {
+        const ufInitials = response.data.map(uf => uf.sigla);
+
+        setUfs(ufInitials);
+      });
   }, []);
 
   return (
@@ -72,7 +90,12 @@ const CreatePoint = () => {
             <div className="field">
               <label htmlFor="uf">State (UF)</label>
               <select name="uf" id="uf">
-                <option value="0">Select a state</option>
+                <option value="0">Select an UF</option>
+                {ufs.map(uf => (
+                  <option key={uf} value={uf}>
+                    {uf}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="field">
