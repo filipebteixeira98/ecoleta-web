@@ -1,7 +1,8 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { Map, TileLayer, Marker } from 'react-leaflet';
+import { LeafletMouseEvent } from 'leaflet';
 import axios from 'axios';
 
 import api from '../../services/api';
@@ -9,7 +10,6 @@ import api from '../../services/api';
 import './styles.css';
 
 import logo from '../../assets/logo.svg';
-// import { LeafletMouseEvent } from 'leaflet';
 
 interface Item {
   id: number;
@@ -29,11 +29,22 @@ const CreatePoint = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [ufs, setUfs] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
+  const [initialPosition, setInitialPosition] = useState<[number, number]>([
+    0, 0,
+  ]);
   const [selectedUf, setSelectedUf] = useState('0');
   const [selectedCity, setSelectedCity] = useState('0');
   const [selectedPosition, setSelectedPosition] = useState<[number, number]>([
     0, 0,
   ]);
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const { latitude, longitude } = position.coords;
+
+      setInitialPosition([latitude, longitude]);
+    });
+  }, []);
 
   useEffect(() => {
     api.get('items').then((response) => {
@@ -81,25 +92,9 @@ const CreatePoint = () => {
     setSelectedCity(city);
   }
 
-  const Markers = () => {
-    const map = useMapEvents({
-      click(event) {
-        setSelectedPosition([event.latlng.lat, event.latlng.lng]);
-      },
-    });
-
-    return selectedPosition ? (
-      <Marker
-        key={selectedPosition[0]}
-        position={selectedPosition}
-        interactive={false}
-      />
-    ) : null;
-  };
-
-  // function handleMapClick(event: LeafletMouseEvent) {
-  //   setSelectedPosition([event.latlng.lat, event.latlng.lng]);
-  // }
+  function handleMapClick(event: LeafletMouseEvent) {
+    setSelectedPosition([event.latlng.lat, event.latlng.lng]);
+  }
 
   return (
     <div id="page-create-point">
@@ -138,18 +133,13 @@ const CreatePoint = () => {
             <h2>Address</h2>
             <span>Select address on map</span>
           </legend>
-          <MapContainer
-            center={[-12.9913412, -38.5165131]}
-            zoom={15}
-            // onClick={handleMapClick}
-          >
+          <Map center={initialPosition} zoom={15} onClick={handleMapClick}>
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {/* <Marker position={selectedPosition} /> */}
-            <Markers />
-          </MapContainer>
+            <Marker position={selectedPosition} />
+          </Map>
           <div className="field-group">
             <div className="field">
               <label htmlFor="uf">State (UF)</label>
